@@ -118,10 +118,10 @@ impl SeedableRng for Xoshiro256AARng {
         // 0); our only option is therefore to use a preset value.
         if seed_u64.iter().all(|&x| x == 0) {
             seed_u64 = [
-                0xBAD5EED_BAD533D,
-                0xBAD5EED_BAD511D,
-                0xBAD5EED_BAD533D,
-                0xBAD5EED_BAD511D,
+                0x28EF3C47_A831FD1C,
+                0x8E975A11_78A024DB,
+                0x84770776_5ECFACC4,
+                0xB35F3DAC_565901B4,
             ];
         }
 
@@ -190,6 +190,105 @@ mod tests {
 
     #[test]
     fn test_xoshiro256aa_true_values() {
+        let seed: [u8; 32] = [
+            2, 3, 5, 6, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,
+            67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
+        ];
 
+        let mut rng = Xoshiro256AARng::from_seed(seed);
+        rng.jump();
+
+        let mut results = [0u64; 9];
+        for i in results.iter_mut() {
+            *i = rng.next_u64();
+        }
+        let expected: [u64; 9] = [
+            6448501676107297803,
+            13631813502479173302,
+            6922221365153641841,
+            3914411535044074158,
+            8169050191151619992,
+            565265129322444892,
+            15411982277416092712,
+            16385527767248928421,
+            16449547130297894689,
+        ];
+        assert_eq!(results, expected);
+
+        let mut results = [0u32; 9];
+        for i in results.iter_mut() {
+            *i = rng.next_u32();
+        }
+        let expected: [u32; 9] = [
+            704897, 316721737, 3933319170, 226300084, 4248520878, 1605962826,
+            3870272192, 1796601862, 33520231,
+        ];
+        assert_eq!(results, expected);
+
+        let mut results = [0u8; 32];
+        rng.fill_bytes(&mut results);
+        let expected: [u8; 32] = [
+            234, 93, 36, 132, 88, 54, 90, 61, 215, 87, 142, 42, 146, 55, 33,
+            93, 48, 15, 56, 145, 162, 113, 180, 131, 101, 62, 104, 64, 184,
+            149, 10, 181,
+        ];
+        assert_eq!(results, expected);
+    }
+
+    #[test]
+    fn test_xoshiro256aa_zero_seed() {
+        // xoshiro256 does not work with an all zero seed.
+        // Instead we set use a hardcoded seed.
+        // Assert it does not panic.
+        let mut rng = Xoshiro256AARng::from_seed([0u8; 32]);
+        let a = rng.next_u64();
+        let b = rng.next_u64();
+        assert!(a != 0);
+        assert!(b != a);
+    }
+
+    #[test]
+    fn test_xoshiro256aa_clone() {
+        let seed: [u8; 32] = [
+            2, 3, 5, 6, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,
+            67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
+        ];
+        let mut rng1 = Xoshiro256AARng::from_seed(seed);
+        let mut rng2 = rng1.clone();
+        for _ in 0..16 {
+            assert_eq!(rng1.next_u64(), rng2.next_u64());
+        }
+    }
+
+    #[cfg(all(feature = "serde1", feature = "std"))]
+    #[test]
+    fn test_xoshiro256aa_serde() {
+        use bincode;
+        use std::io::{BufReader, BufWriter};
+
+        let seed: [u8; 32] = [
+            2, 3, 5, 6, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61,
+            67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
+        ];
+        let mut rng = Xoshiro256AARng::from_seed(seed);
+
+        let buf: Vec<u8> = Vec::new();
+        let mut buf = BufWriter::new(buf);
+        bincode::serialize_into(&mut buf, &rng).expect("Could not serialize");
+
+        let buf = buf.into_inner().unwrap();
+        let mut read = BufReader::new(&buf[..]);
+        let mut deserialized: Xoshiro256AARng =
+            bincode::deserialize_from(&mut read)
+                .expect("Could not deserialize");
+
+        assert_eq!(rng.s0, deserialized.s0);
+        assert_eq!(rng.s1, deserialized.s1);
+        assert_eq!(rng.s2, deserialized.s2);
+        assert_eq!(rng.s3, deserialized.s3);
+
+        for _ in 0..16 {
+            assert_eq!(rng.next_u64(), deserialized.next_u64());
+        }
     }
 }
