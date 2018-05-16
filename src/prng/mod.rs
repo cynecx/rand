@@ -21,7 +21,7 @@
 //!
 //! In simple terms, the basic PRNGs are often predictable; CSPRNGs should not
 //! be predictable *when used correctly*.
-//! 
+//!
 //! Contents of this documentation:
 //!
 //! 1. [The generators](#the-generators)
@@ -136,7 +136,7 @@
 //! 256 bits would be approximately the minimum secure size. In practice,
 //! CSPRNGs tend to use quite a bit more, [`ChaChaRng`] is relatively small with
 //! 136 bytes of state.
-//! 
+//!
 //! ## Initialization time
 //!
 //! The time required to initialize new generators varies significantly. Many
@@ -319,6 +319,7 @@ pub mod chacha;
 pub mod hc128;
 pub mod isaac;
 pub mod isaac64;
+mod pcg;
 mod xorshift;
 
 mod isaac_array;
@@ -328,3 +329,4 @@ pub use self::hc128::Hc128Rng;
 pub use self::isaac::IsaacRng;
 pub use self::isaac64::Isaac64Rng;
 pub use self::xorshift::XorShiftRng;
+pub use self::pcg::PcgRng;
