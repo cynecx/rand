@@ -76,7 +76,7 @@ impl Xoshiro256AARng {
 impl RngCore for Xoshiro256AARng {
     #[inline]
     fn next_u32(&mut self) -> u32 {
-        impls::next_u32_via_fill(self)
+        (self.next_u64() & 0xFFFFFFFFu64) as u32
     }
 
     #[inline]
